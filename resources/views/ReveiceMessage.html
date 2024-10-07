@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Client</title>
+</head>
+<body>
+    <h1>Messages from Server</h1>
+    <div id="messages"></div>
+
+    <script>
+        // Kết nối tới WebSocket server (localhost ở port 8080)
+        var conn = new WebSocket('ws://localhost:8080');
+
+        // Xử lý sự kiện khi kết nối WebSocket mở
+        conn.onopen = function(e) {
+            console.log("WebSocket connection established!");
+        };
+
+        // Xử lý sự kiện khi có tin nhắn từ server gửi đến
+        conn.onmessage = function(e) {
+            console.log("Message from server: ", e.data);
+            
+            // Hiển thị tin nhắn trên giao diện
+            var messagesDiv = document.getElementById('messages');
+            var messageElement = document.createElement('div');
+            messageElement.textContent = e.data; // Nội dung tin nhắn
+            messagesDiv.appendChild(messageElement);
+        };
+
+        // Xử lý sự kiện nếu có lỗi trong quá trình kết nối
+        conn.onerror = function(e) {
+            console.log("Error occurred: ", e);
+        };
+
+        // Xử lý khi kết nối WebSocket đóng
+        conn.onclose = function(e) {
+            console.log("WebSocket connection closed.");
+        };
+    </script>
+</body>
+</html>

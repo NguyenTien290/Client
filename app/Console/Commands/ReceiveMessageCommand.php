@@ -6,6 +6,8 @@ use Illuminate\Console\Command;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
+use Ratchet\ConnectionInterface;
+use SplObjectStorage;
 
 class ReceiveMessageCommand extends Command
 {
@@ -16,9 +18,12 @@ class ReceiveMessageCommand extends Command
 
      protected $signature = 'receive:message {pattern}';
     protected $description = 'Receive a message to RabbitMQ using Exchange';
+    
+    protected $clients;
     public function __construct()
     {
         parent::__construct();
+        $this->clients = new \SplObjectStorage;
     }
 
     public function handle()
@@ -85,6 +90,7 @@ class ReceiveMessageCommand extends Command
         // Hàm callback để xử lý thông điệp nhận được
         $callback = function (AMQPMessage $message) {
             $this->info('Received: ' . $message->body);
+            $this->sendMessageToClient($message->body);
         };
 
         // Lắng nghe thông điệp từ queue
@@ -99,5 +105,32 @@ class ReceiveMessageCommand extends Command
         $channel->close();
         $connection->close();
     }
+
+    public function sendMessageToClient($message)
+    {
+        foreach($this->clients as $client){
+            $client->send($message);
+        }
+    }
+    
+    public function onOpen(ConnectionInterface $conn)
+    {
+        $this->clients->attach($conn);
+    }
+
+    public function onMessage(ConnectionInterface $from, $msg)
+    {
+        // Xử lý thông điệp từ client
+    }
+
+    public function onClose(ConnectionInterface $conn)
+    {
+        // Xóa kết nối
+        $this->clients->detach($conn);
+    }
+
+    public function onError(ConnectionInterface $conn, \Exception $e)
+    {
+        $conn->close();
     }
 }
